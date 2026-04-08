@@ -557,7 +557,9 @@ function getDay(dateStr) {
 }
 
 // ── 画面への読み込み ──
-async function loadDayData() {
+let greetingDone = false;
+
+async function loadDayData(callGreeting = false) {
   const key = dateKey(currentDate);
   const data = await getDay(key);
   const logEl = document.getElementById('user-log');
@@ -568,7 +570,10 @@ async function loadDayData() {
     logEl.removeAttribute('readonly');
     document.getElementById('input-area').style.display = 'flex';
     document.getElementById('ai-window').style.display = 'block';
-    showAIGreeting();
+    if (callGreeting && !greetingDone) {
+      greetingDone = true;
+      showAIGreeting();
+    }
   } else {
     logEl.setAttribute('readonly', true);
     document.getElementById('input-area').style.display = 'none';
@@ -812,7 +817,7 @@ document.getElementById('user-input').addEventListener('input', function() {
 // ── 起動 ──
 openDB().then(() => {
   updateDateBar();
-  loadDayData();
+  loadDayData(true);
 });
 </script>
 </body>
