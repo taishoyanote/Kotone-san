@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>今日の記録</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'BIZ UDPGothic', sans-serif;
+      background: #faf8f4;
+      color: #333;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── 日付バー ── */
+    #date-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 8px 16px;
+      background: #fff;
+      border-bottom: 1px solid #ddd;
+      flex-shrink: 0;
+    }
+
+    #date-bar button {
+      background: none;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 4px 10px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    #date-display {
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+      text-decoration: underline dotted #999;
+    }
+
+    /* ── カレンダーポップアップ ── */
+    #calendar-popup {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 16px;
+      z-index: 100;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+      min-width: 280px;
+    }
+
+    #calendar-popup.open {
+      display: block;
+    }
+
+    #calendar-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.3);
+      z-index: 99;
+    }
+
+    #calendar-overlay.open {
+      display: block;
+    }
+
+    #calendar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    #calendar-header button {
+      background: none;
+      border: none;
+      font-size: 18px;
+      cursor: pointer;
+      padding: 4px 8px;
+    }
+
+    #calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+      text-align: center;
+    }
+
+    #calendar-grid .day-label {
+      font-size: 11px;
+      color: #999;
+      padding: 4px 0;
+    }
+
+    #calendar-grid .day {
+      padding: 6px 0;
+      font-size: 13px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+
+    #calendar-grid .day:hover {
+      background: #41c9b4;
+      color: #fff;
+    }
+
+    #calendar-grid .day.today {
+      font-weight: bold;
+      color: #41c9b4;
+    }
+
+    #calendar-grid .day.selected {
+      background: #41c9b4;
+      color: #fff;
+    }
+
+    #calendar-grid .day.has-data::after {
+      content: '•';
+      display: block;
+      font-size: 8px;
+      color: #41c9b4;
+      margin-top: -2px;
+    }
+
+    #calendar-grid .day.selected.has-data::after {
+      color: #fff;
+    }
+
+    #calendar-grid .day.empty {
+      cursor: default;
+    }
+
+    /* ── AIの発言窓 ── */
+    #ai-window {
+      background: #fff;
+      border-bottom: 1px solid #ddd;
+      padding: 12px 16px;
+      flex-shrink: 0;
+      min-height: 80px;
+      max-height: 30dvh;
+      overflow-y: auto;
+    }
+
+    #ai-label {
+      font-size: 11px;
+      color: #999;
+      margin-bottom: 6px;
+    }
+
+    #ai-message {
+      font-size: 15px;
+      line-height: 1.7;
+      color: #333;
+      white-space: pre-wrap;
+      letter-spacing: 0.2em;
+    }
+
+    /* ── 入力エリア ── */
+    #input-area {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      padding: 8px 12px;
+      background: #fff;
+      border-bottom: 1px solid #ddd;
+      flex-shrink: 0;
+    }
+
+    #user-input {
+      flex: 1;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 15px;
+      font-family: inherit;
+      resize: none;
+      max-height: 100px;
+      line-height: 1.5;
+      background: #faf8f4;
+      letter-spacing: 0.2em;
+    }
+
+    #user-input:focus {
+      outline: none;
+      border-color: #41c9b4;
+    }
+
+    #send-btn {
+      background: #41c9b4;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 16px;
+      font-size: 15px;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    #send-btn:active {
+      opacity: 0.8;
+    }
+
+    /* ── ユーザー発言窓 ── */
+    #user-window {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 16px;
+      background: #faf8f4;
+    }
+
+    #user-label {
+      font-size: 11px;
+      color: #999;
+      margin-bottom: 8px;
+    }
+
+    #user-log {
+      font-size: 15px;
+      line-height: 2.6;
+      color: #333;
+      white-space: pre-wrap;
+      width: 100%;
+      min-height: 100%;
+      background: transparent;
+      border: none;
+      outline: none;
+      resize: none;
+      font-family: inherit;
+      letter-spacing: 0.2em;
+    }
+
+    /* ── 今日以外は編集不可表示 ── */
+    #user-log[readonly] {
+      color: #555;
+    }
+
+    /* ── 設定ボタン ── */
+    #settings-btn {
+      margin-left: 8px;
+      background: none;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 4px 10px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    /* ── 設定パネル ── */
+    #settings-popup {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 16px;
+      z-index: 100;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+      width: 88%;
+      max-width: 400px;
+    }
+
+    #settings-popup.open { display: block; }
+
+    #settings-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.3);
+      z-index: 99;
+    }
+
+    #settings-overlay.open { display: block; }
+
+    #settings-header {
+      font-weight: bold;
+      margin-bottom: 10px;
+      font-size: 15px;
+    }
+
+    #profile-input {
+      width: 100%;
+      height: 180px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      resize: vertical;
+      background: #faf8f4;
+    }
+
+    #settings-buttons {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+      justify-content: flex-end;
+    }
+
+    #profile-save-btn {
+      background: #41c9b4;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 16px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    #profile-close-btn {
+      background: none;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      padding: 8px 16px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    /* ── 空の状態 ── */
+    .empty-hint {
+      color: #bbb;
+      font-size: 14px;
+      text-align: center;
+      margin-top: 24px;
+      pointer-events: none;
+    }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <!-- 日付バー -->
+  <div id="date-bar">
+    <button id="prev-btn">◀</button>
+    <span id="date-display"></span>
+    <button id="next-btn">▶</button>
+    <button id="settings-btn">設定</button>
+  </div>
+
+  <!-- 設定パネル -->
+  <div id="settings-overlay"></div>
+  <div id="settings-popup">
+    <div id="settings-header">設定</div>
+    <div style="font-size:13px; color:#666; margin-bottom:4px;">あなたのお名前（呼び方）</div>
+    <input id="username-input" type="text" placeholder="例：泰子" style="width:100%; border:1px solid #ccc; border-radius:8px; padding:8px 12px; font-size:14px; font-family:inherit; background:#faf8f4; margin-bottom:12px;" />
+    <div style="font-size:13px; color:#666; margin-bottom:4px;">自己紹介</div>
+    <textarea id="profile-input" placeholder="noteの自己紹介をここに貼り付けてください"></textarea>
+    <div id="settings-buttons">
+      <button id="profile-save-btn">記憶する</button>
+      <button id="profile-close-btn">閉じる</button>
+    </div>
+  </div>
+
+  <!-- カレンダー -->
+  <div id="calendar-overlay"></div>
+  <div id="calendar-popup">
+    <div id="calendar-header">
+      <button id="cal-prev">◀</button>
+      <span id="cal-month-label"></span>
+      <button id="cal-next">▶</button>
+    </div>
+    <div id="calendar-grid"></div>
+  </div>
+
+  <!-- AIの発言窓 -->
+  <div id="ai-window">
+    <div id="ai-label">琴音さん</div>
+    <div id="ai-message">読み込み中...</div>
+  </div>
+
+  <!-- 入力エリア -->
+  <div id="input-area">
+    <textarea id="user-input" rows="1" placeholder="ここに入力..."></textarea>
+    <button id="send-btn">送信</button>
+  </div>
+
+  <!-- ユーザー発言窓 -->
+  <div id="user-window">
+    <div id="user-label">今日の記録</div>
+    <textarea id="user-log" placeholder="会話が記録されます"></textarea>
+  </div>
+
+<script>
+// ── 日付管理 ──
+let currentDate = new Date();
+currentDate.setHours(0,0,0,0);
+
+const todayDate = new Date();
+todayDate.setHours(0,0,0,0);
+
+function formatDate(d) {
+  return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`;
+}
+
+function dateKey(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function isToday(d) {
+  return dateKey(d) === dateKey(todayDate);
+}
+
+function updateDateBar() {
+  document.getElementById('date-display').textContent = formatDate(currentDate);
+  // 今日より未来には進めない
+  document.getElementById('next-btn').style.opacity = isToday(currentDate) ? '0.3' : '1';
+  document.getElementById('next-btn').disabled = isToday(currentDate);
+}
+
+// ── 日付移動 ──
+document.getElementById('prev-btn').onclick = () => {
+  currentDate.setDate(currentDate.getDate() - 1);
+  updateDateBar();
+  loadDayData();
+};
+
+document.getElementById('next-btn').onclick = () => {
+  if (!isToday(currentDate)) {
+    currentDate.setDate(currentDate.getDate() + 1);
+    updateDateBar();
+    loadDayData();
+  }
+};
+
+// ── カレンダー ──
+let calViewDate = new Date();
+
+function openCalendar() {
+  calViewDate = new Date(currentDate);
+  renderCalendar();
+  document.getElementById('calendar-popup').classList.add('open');
+  document.getElementById('calendar-overlay').classList.add('open');
+}
+
+function closeCalendar() {
+  document.getElementById('calendar-popup').classList.remove('open');
+  document.getElementById('calendar-overlay').classList.remove('open');
+}
+
+document.getElementById('date-display').onclick = openCalendar;
+document.getElementById('calendar-overlay').onclick = closeCalendar;
+
+document.getElementById('cal-prev').onclick = () => {
+  calViewDate.setMonth(calViewDate.getMonth() - 1);
+  renderCalendar();
+};
+
+document.getElementById('cal-next').onclick = () => {
+  calViewDate.setMonth(calViewDate.getMonth() + 1);
+  renderCalendar();
+};
+
+function renderCalendar() {
+  const y = calViewDate.getFullYear();
+  const m = calViewDate.getMonth();
+  document.getElementById('cal-month-label').textContent = `${y}年${m+1}月`;
+
+  const grid = document.getElementById('calendar-grid');
+  grid.innerHTML = '';
+
+  ['日','月','火','水','木','金','土'].forEach(d => {
+    const el = document.createElement('div');
+    el.className = 'day-label';
+    el.textContent = d;
+    grid.appendChild(el);
+  });
+
+  const firstDay = new Date(y, m, 1).getDay();
+  for (let i = 0; i < firstDay; i++) {
+    const el = document.createElement('div');
+    el.className = 'day empty';
+    grid.appendChild(el);
+  }
+
+  const daysInMonth = new Date(y, m+1, 0).getDate();
+  for (let d = 1; d <= daysInMonth; d++) {
+    const el = document.createElement('div');
+    el.className = 'day';
+    el.textContent = d;
+
+    const thisDate = new Date(y, m, d);
+    thisDate.setHours(0,0,0,0);
+
+    if (dateKey(thisDate) === dateKey(todayDate)) el.classList.add('today');
+    if (dateKey(thisDate) === dateKey(currentDate)) el.classList.add('selected');
+
+    // 未来は選択不可
+    if (thisDate > todayDate) {
+      el.style.color = '#ccc';
+      el.style.cursor = 'default';
+    } else {
+      el.onclick = () => {
+        currentDate = new Date(thisDate);
+        updateDateBar();
+        loadDayData();
+        closeCalendar();
+      };
+    }
+
+    grid.appendChild(el);
+  }
+}
+
+// ── IndexedDB ──
+let db;
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open('diary-db', 1);
+    req.onupgradeneeded = e => {
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains('days')) {
+        d.createObjectStore('days', { keyPath: 'date' });
+      }
+    };
+    req.onsuccess = e => { db = e.target.result; resolve(); };
+    req.onerror = reject;
+  });
+}
+
+function saveDay(dateStr, log) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('days', 'readwrite');
+    tx.objectStore('days').put({ date: dateStr, log });
+    tx.oncomplete = resolve;
+    tx.onerror = reject;
+  });
+}
+
+function getDay(dateStr) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('days', 'readonly');
+    const req = tx.objectStore('days').get(dateStr);
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror = reject;
+  });
+}
+
+// ── 画面への読み込み ──
+async function loadDayData() {
+  const key = dateKey(currentDate);
+  const data = await getDay(key);
+  const logEl = document.getElementById('user-log');
+  logEl.value = data ? data.log : '';
+
+  // 今日以外は編集不可
+  if (isToday(currentDate)) {
+    logEl.removeAttribute('readonly');
+    document.getElementById('input-area').style.display = 'flex';
+    document.getElementById('ai-window').style.display = 'block';
+    showAIGreeting();
+  } else {
+    logEl.setAttribute('readonly', true);
+    document.getElementById('input-area').style.display = 'none';
+    document.getElementById('ai-window').style.display = 'none';
+  }
+}
+
+// ── 自動保存 ──
+let autoSaveTimer;
+document.getElementById('user-log').addEventListener('input', () => {
+  clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(async () => {
+    const key = dateKey(currentDate);
+    const log = document.getElementById('user-log').value;
+    await saveDay(key, log);
+  }, 800);
+});
+
+// ── GAS URL ──
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbydEbAV9H3r4erdYWTEBDNyasfNm0IK1UFZm6DPUc0tuRJVVI7KwHUaI7S4hc_QZ663/exec';
+
+// ── ユーザー発言カウント（アプリ起動ごとにリセット）──
+let userMessageCount = 0;
+
+// ── 設定パネル ──
+function openSettings() {
+  document.getElementById('username-input').value =
+    localStorage.getItem('userName') || '';
+  document.getElementById('profile-input').value =
+    localStorage.getItem('userProfile') || '';
+  document.getElementById('settings-popup').classList.add('open');
+  document.getElementById('settings-overlay').classList.add('open');
+}
+
+function closeSettings() {
+  document.getElementById('settings-popup').classList.remove('open');
+  document.getElementById('settings-overlay').classList.remove('open');
+}
+
+document.getElementById('settings-btn').onclick = openSettings;
+document.getElementById('settings-overlay').onclick = closeSettings;
+document.getElementById('profile-close-btn').onclick = closeSettings;
+document.getElementById('profile-save-btn').onclick = () => {
+  const userName = document.getElementById('username-input').value.trim();
+  const profile = document.getElementById('profile-input').value.trim();
+  localStorage.setItem('userName', userName);
+  localStorage.setItem('userProfile', profile);
+  closeSettings();
+  alert('設定を記憶しました');
+};
+
+// ── システムプロンプト生成 ──
+function buildSystemPrompt() {
+  const profile = localStorage.getItem('userProfile') || '';
+  const userName = localStorage.getItem('userName') || 'あなた';
+  const profileSection = profile
+    ? `【ユーザーのプロフィール（この人物像をもとにインタビューの方向性を決める）】\n${profile}\n\n`
+    : '';
+  return `${profileSection}あなたは「琴音」という名前の女性のプロインタビュアー兼コンテンツ編集者です。
+数多くのnoteクリエイターの「書きたいこと」を言葉にする手助けをしてきたプロです。
+
+ユーザーの名前は「${userName}」です。質問の冒頭では名前を呼びかけず、会話の流れの中で自然に使う場合のみ使用してください。
+
+ユーザーが最初に教えてくれたテーマと、上記のプロフィールをもとに、
+note記事の素材として使える体験・エピソード・ノウハウを引き出してください。
+
+インタビューの目的：
+プロフィールに書かれた人物像から「この人が実際に知りたいこと・
+悩んでいること・つまずきやすいこと」を想定し、
+それに応えられる内容をテーマの中から掘り起こす。
+
+あなたの信念：
+- 読者が本当に知りたいのは「その人の実体験」だけ
+- 抽象論より「あのとき何が起きたか」が記事を面白くする
+- 相手が話しやすい雰囲気を作るのがインタビュアーの仕事
+
+質問のルール：
+- 質問は一度に1つだけ
+- 具体的なエピソード・場面・数字・感情が引き出せる質問にする
+- 「どう思いますか？」のような抽象的な質問は禁止
+- 似たような質問の繰り返しは禁止
+- 短くシンプルな質問にする
+- ユーザーの答えをしっかり受け止めてから次の質問をする
+- 答えなくてもOK、プレッシャーを与えない
+- 絶対に要約・まとめをしない
+- 日本語のみで返答する`;
+}
+
+// ── 会話履歴（今日分のみメモリ保持）──
+let conversationHistory = [];
+
+// ── AIにメッセージを送る ──
+async function callAI(userMessage) {
+  if (userMessage) {
+    conversationHistory.push({ role: 'user', content: userMessage });
+  }
+  const messages = [
+    { role: 'system', content: buildSystemPrompt() },
+    ...conversationHistory
+  ];
+  try {
+    const res = await fetch(GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ messages })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    const reply = data.reply;
+    conversationHistory.push({ role: 'assistant', content: reply });
+    return reply;
+  } catch (err) {
+    return '少し時間をおいてから、もう一度話しかけてみてください。';
+  }
+}
+
+// ── AI起動時の挨拶 ──
+async function showAIGreeting() {
+  const aiMsg = document.getElementById('ai-message');
+  conversationHistory = [];
+  userMessageCount = 0;
+  const reply = '今回のテーマを教えてください。';
+  aiMsg.textContent = reply;
+  conversationHistory.push({ role: 'assistant', content: reply });
+
+  // 最初の挨拶をログの一番下に追加（まだ保存されていない場合のみ）
+  const key = dateKey(currentDate);
+  const logEl = document.getElementById('user-log');
+  const existing = logEl.value;
+
+  // 記録なし→一番下、記録あり→一番上に追加
+  const newLog = existing
+    ? `琴音さん：${reply}` + '\n\n' + existing
+    : `琴音さん：${reply}`;
+  logEl.value = newLog;
+  logEl.scrollTop = 0;
+  await saveDay(key, logEl.value);
+}
+
+// ── 送信処理 ──
+async function sendMessage() {
+  const input = document.getElementById('user-input');
+  const text = input.value.trim();
+  if (!text) return;
+
+  const key = dateKey(currentDate);
+  const logEl = document.getElementById('user-log');
+  const aiMsg = document.getElementById('ai-message');
+  const sendBtn = document.getElementById('send-btn');
+
+  // ユーザーの発言を一番上に追加
+  const userName = localStorage.getItem('userName') || 'あなた';
+  const newLine = logEl.value
+    ? `${userName}：${text}` + '\n\n' + logEl.value
+    : `${userName}：${text}`;
+  logEl.value = newLine;
+
+  // 一番上にスクロール
+  logEl.scrollTop = 0;
+
+  // 保存
+  await saveDay(key, logEl.value);
+
+  // 入力欄をリセット
+  input.value = '';
+  input.style.height = 'auto';
+
+  // ユーザー発言カウント
+  userMessageCount++;
+
+  // AI返答を取得
+  sendBtn.disabled = true;
+  aiMsg.textContent = '考えています...';
+
+  let reply;
+  if (userMessageCount > 0 && userMessageCount <= 100 && userMessageCount % 10 === 0) {
+    // 10回刻みで継続確認
+    reply = await callAI(text + '\n\n※ここで一度確認してください：「たくさん話してくれてありがとうございます。まだ続けますか？もちろん続けなくても大丈夫ですよ。」と伝えてから、続きの質問は控えてください。');
+  } else {
+    reply = await callAI(text);
+  }
+
+  aiMsg.textContent = reply;
+  sendBtn.disabled = false;
+
+  // AI発言もログに追加（時間表示なし）
+  const logAfterAI = logEl.value
+    ? `琴音さん：${reply}` + '\n\n' + logEl.value
+    : `琴音さん：${reply}`;
+  logEl.value = logAfterAI;
+  logEl.scrollTop = 0;
+
+  // AI発言込みで保存
+  await saveDay(key, logEl.value);
+}
+
+document.getElementById('send-btn').onclick = sendMessage;
+
+document.getElementById('user-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+
+// テキストエリア自動高さ調整
+document.getElementById('user-input').addEventListener('input', function() {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+});
+
+// ── 起動 ──
+openDB().then(() => {
+  updateDateBar();
+  loadDayData();
+});
+</script>
+</body>
+</html>
