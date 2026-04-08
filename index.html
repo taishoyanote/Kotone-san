@@ -690,19 +690,48 @@ async function showAIGreeting() {
   const aiMsg = document.getElementById('ai-message');
   conversationHistory = [];
   userMessageCount = 0;
-  const reply = '今回のテーマを教えてください。';
-  aiMsg.textContent = reply;
-  conversationHistory.push({ role: 'assistant', content: reply });
 
-  // 最初の挨拶をログの一番下に追加（まだ保存されていない場合のみ）
+  aiMsg.textContent = '少しお待ちください...';
+
+  // 今日の出来事をAIに生成させる
+  let event = '';
+  try {
+    const res = await fetch(GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        messages: [
+          {
+            role: 'system',
+            content: '日本語で答えてください。指定された内容だけを出力し、前置きや説明は一切不要です。'
+          },
+          {
+            role: 'user',
+            content: '琴音という女性が今日体験した「起こりうる範囲で少し突拍子もない出来事」を1文50文字以内で作ってください。文末は「ました。」「でした。」「ました！」のいずれかで終わること。出来事だけを出力してください。'
+          }
+        ]
+      })
+    });
+    const data = await res.json();
+    if (data.reply) event = data.reply.trim();
+  } catch (e) {
+    event = '';
+  }
+
+  const greeting = event
+    ? `${event}\n今回のテーマを教えてください。`
+    : '今回のテーマを教えてください。';
+
+  aiMsg.textContent = greeting;
+  conversationHistory.push({ role: 'assistant', content: greeting });
+
   const key = dateKey(currentDate);
   const logEl = document.getElementById('user-log');
   const existing = logEl.value;
 
-  // 記録なし→一番下、記録あり→一番上に追加
   const newLog = existing
-    ? `琴音さん：${reply}` + '\n\n' + existing
-    : `琴音さん：${reply}`;
+    ? `琴音さん：${greeting}` + '\n\n' + existing
+    : `琴音さん：${greeting}`;
   logEl.value = newLog;
   logEl.scrollTop = 0;
   await saveDay(key, logEl.value);
