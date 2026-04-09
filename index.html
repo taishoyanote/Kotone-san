@@ -365,10 +365,25 @@
       border-radius: 12px;
     }
 
+    /* ── ロゴ透かし ── */
+    #logo-watermark {
+      position: fixed;
+      bottom: 16px;
+      right: 16px;
+      width: min(20vw, 80px);
+      height: auto;
+      opacity: 0.35;
+      pointer-events: none;
+      z-index: 50;
+    }
+
   </style>
   <link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic&display=swap" rel="stylesheet" />
 </head>
 <body>
+
+  <!-- ロゴ透かし -->
+  <img id="logo-watermark" src="./logo.png" alt="ロゴ" />
 
   <!-- ローディング画像 -->
   <div id="loading-overlay">
