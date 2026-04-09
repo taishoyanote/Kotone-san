@@ -375,6 +375,7 @@
   <div id="loading-overlay">
     <img id="loading-img-wait" src="./loading.png" alt="少しお待ちください" />
     <img id="loading-img-think" src="./thinking.png" alt="考えています" style="display:none;" />
+    <img id="loading-img-saved" src="./saved.png" alt="設定を記憶しました" style="display:none;" />
   </div>
 
   <!-- 日付バー -->
@@ -650,7 +651,13 @@ document.getElementById('profile-save-btn').onclick = () => {
   localStorage.setItem('userName', userName);
   localStorage.setItem('userProfile', profile);
   closeSettings();
-  alert('設定を記憶しました');
+  document.getElementById('loading-img-wait').style.display = 'none';
+  document.getElementById('loading-img-think').style.display = 'none';
+  document.getElementById('loading-img-saved').style.display = '';
+  document.getElementById('loading-overlay').classList.add('show');
+  setTimeout(() => {
+    document.getElementById('loading-overlay').classList.remove('show');
+  }, 2000);
 };
 
 // ── システムプロンプト生成 ──
