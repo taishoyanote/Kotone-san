@@ -344,10 +344,37 @@
       margin-top: 24px;
       pointer-events: none;
     }
+
+    /* ── ローディング画像 ── */
+    #loading-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      pointer-events: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #loading-overlay.show {
+      display: flex;
+    }
+
+    #loading-overlay img {
+      width: min(80vw, 300px);
+      height: auto;
+      border-radius: 12px;
+    }
+
   </style>
   <link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic&display=swap" rel="stylesheet" />
 </head>
 <body>
+
+  <!-- ローディング画像 -->
+  <div id="loading-overlay">
+    <img src="./loading.png" alt="少しお待ちください" />
+  </div>
 
   <!-- 日付バー -->
   <div id="date-bar">
@@ -697,6 +724,7 @@ async function showAIGreeting() {
   userMessageCount = 0;
 
   aiMsg.textContent = '少しお待ちください...';
+  document.getElementById('loading-overlay').classList.add('show');
 
   // 今日の出来事をAIに生成させる
   let event = '';
@@ -728,6 +756,8 @@ async function showAIGreeting() {
     : '今回のテーマを教えてください。';
 
   aiMsg.textContent = greeting;
+  document.getElementById('loading-overlay').classList.remove('show');
+
   conversationHistory.push({ role: 'assistant', content: greeting });
 
   const key = dateKey(currentDate);
