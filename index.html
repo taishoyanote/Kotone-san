@@ -656,6 +656,7 @@ document.getElementById('profile-save-btn').onclick = () => {
   document.getElementById('loading-overlay').classList.add('show');
   setTimeout(() => {
     document.getElementById('loading-overlay').classList.remove('show');
+    document.getElementById('loading-img-saved').style.display = 'none';
   }, 2000);
 };
 
