@@ -373,7 +373,8 @@
 
   <!-- ローディング画像 -->
   <div id="loading-overlay">
-    <img src="./loading.png" alt="少しお待ちください" />
+    <img id="loading-img-wait" src="./loading.png" alt="少しお待ちください" />
+    <img id="loading-img-think" src="./thinking.png" alt="考えています" style="display:none;" />
   </div>
 
   <!-- 日付バー -->
@@ -724,6 +725,8 @@ async function showAIGreeting() {
   userMessageCount = 0;
 
   aiMsg.textContent = '少しお待ちください...';
+  document.getElementById('loading-img-wait').style.display = '';
+  document.getElementById('loading-img-think').style.display = 'none';
   document.getElementById('loading-overlay').classList.add('show');
 
   // 今日の出来事をAIに生成させる
@@ -806,6 +809,8 @@ async function sendMessage() {
   // AI返答を取得
   sendBtn.disabled = true;
   aiMsg.textContent = '考えています...';
+  document.getElementById('loading-img-wait').style.display = 'none';
+  document.getElementById('loading-img-think').style.display = '';
   document.getElementById('loading-overlay').classList.add('show');
 
   let reply;
