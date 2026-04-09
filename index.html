@@ -806,6 +806,7 @@ async function sendMessage() {
   // AI返答を取得
   sendBtn.disabled = true;
   aiMsg.textContent = '考えています...';
+  document.getElementById('loading-overlay').classList.add('show');
 
   let reply;
   if (userMessageCount > 0 && userMessageCount <= 100 && userMessageCount % 10 === 0) {
@@ -816,6 +817,7 @@ async function sendMessage() {
   }
 
   aiMsg.textContent = reply;
+  document.getElementById('loading-overlay').classList.remove('show');
   sendBtn.disabled = false;
 
   // AI発言もログに追加（時間表示なし）
