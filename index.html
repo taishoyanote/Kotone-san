@@ -608,6 +608,13 @@ async function loadDayData(callGreeting = false) {
   const logEl = document.getElementById('user-log');
   logEl.value = data ? data.log : '';
 
+  // 今日は一番下（最新）・過去の日付は一番上（最初）から表示
+  if (isToday(currentDate)) {
+    logEl.scrollTop = logEl.scrollHeight;
+  } else {
+    logEl.scrollTop = 0;
+  }
+
   // 今日以外は編集不可
   if (isToday(currentDate)) {
     logEl.removeAttribute('readonly');
@@ -806,10 +813,10 @@ async function showAIGreeting() {
   const existing = logEl.value;
 
   const newLog = existing
-    ? `琴音さん：${greeting}` + '\n\n' + existing
+    ? existing + '\n\n' + `琴音さん：${greeting}`
     : `琴音さん：${greeting}`;
   logEl.value = newLog;
-  logEl.scrollTop = 0;
+  logEl.scrollTop = logEl.scrollHeight;
   await saveDay(key, logEl.value);
 }
 
@@ -827,12 +834,12 @@ async function sendMessage() {
   // ユーザーの発言を一番上に追加
   const userName = localStorage.getItem('userName') || 'あなた';
   const newLine = logEl.value
-    ? `${userName}：${text}` + '\n\n' + logEl.value
+    ? logEl.value + '\n\n' + `${userName}：${text}`
     : `${userName}：${text}`;
   logEl.value = newLine;
 
-  // 一番上にスクロール
-  logEl.scrollTop = 0;
+  // 一番下にスクロール
+  logEl.scrollTop = logEl.scrollHeight;
 
   // 保存
   await saveDay(key, logEl.value);
@@ -865,10 +872,10 @@ async function sendMessage() {
 
   // AI発言もログに追加（時間表示なし）
   const logAfterAI = logEl.value
-    ? `琴音さん：${reply}` + '\n\n' + logEl.value
+    ? logEl.value + '\n\n' + `琴音さん：${reply}`
     : `琴音さん：${reply}`;
   logEl.value = logAfterAI;
-  logEl.scrollTop = 0;
+  logEl.scrollTop = logEl.scrollHeight;
 
   // AI発言込みで保存
   await saveDay(key, logEl.value);
