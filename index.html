@@ -31,6 +31,7 @@
       background: #e0f5f1 url('./header.png') center center / auto 100% no-repeat;
       border-bottom: 1px solid #ddd;
       flex-shrink: 0;
+      position: relative;
     }
 
     #date-bar button {
@@ -378,6 +379,82 @@
       border-radius: 12px;
     }
 
+    /* ── クレジットポップアップ ── */
+    #credit-btn {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 48px;
+      height: 100%;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      z-index: 10;
+    }
+
+    #credit-popup {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #f0faf8;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 16px;
+      z-index: 100;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+      width: 88%;
+      max-width: 400px;
+    }
+
+    #credit-popup.open { display: block; }
+
+    #credit-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.3);
+      z-index: 99;
+    }
+
+    #credit-overlay.open { display: block; }
+
+    #credit-popup h3 {
+      font-size: 15px;
+      font-weight: bold;
+      margin-bottom: 12px;
+      color: #333;
+    }
+
+    #credit-popup .credit-section {
+      margin-bottom: 12px;
+      font-size: 14px;
+      line-height: 2;
+    }
+
+    #credit-popup .credit-section a {
+      color: #41c9b4;
+      text-decoration: none;
+    }
+
+    #credit-popup hr {
+      border: none;
+      border-top: 1px solid #ddd;
+      margin: 12px 0;
+    }
+
+    #credit-close-btn {
+      display: block;
+      margin: 12px auto 0;
+      background: none;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      padding: 8px 24px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
     /* ── ロゴ透かし ── */
     #logo-watermark {
       position: fixed;
@@ -398,6 +475,23 @@
   <!-- ロゴ透かし -->
   <img id="logo-watermark" src="./logo.png" alt="ロゴ" />
 
+  <!-- クレジットポップアップ -->
+  <div id="credit-overlay"></div>
+  <div id="credit-popup">
+    <h3>琴音さんのNote</h3>
+    <div class="credit-section">
+      製作者：<a href="https://note.com/ai48start" target="_blank">泰祥屋note店</a><br>
+      <a href="https://note.com/ai48start" target="_blank">https://note.com/ai48start</a>
+    </div>
+    <hr>
+    <div class="credit-section">
+      心からのありがとう<br>
+      モニターのクリエイター名<br>
+      <a href="#" target="_blank">URL</a>
+    </div>
+    <button id="credit-close-btn">閉じる</button>
+  </div>
+
   <!-- ローディング画像 -->
   <div id="loading-overlay">
     <img id="loading-img-wait" src="./loading.png" alt="少しお待ちください" />
@@ -407,6 +501,7 @@
 
   <!-- 日付バー -->
   <div id="date-bar">
+    <button id="credit-btn"></button>
     <button id="prev-btn">◀</button>
     <span id="date-display"></span>
     <button id="next-btn">▶</button>
@@ -662,6 +757,16 @@ const GAS_URL = 'https://script.google.com/macros/s/AKfycbydEbAV9H3r4erdYWTEBDNy
 
 // ── ユーザー発言カウント（アプリ起動ごとにリセット）──
 let userMessageCount = 0;
+
+// ── クレジットポップアップ ──
+document.getElementById('credit-btn').onclick = () => {
+  document.getElementById('credit-popup').classList.add('open');
+  document.getElementById('credit-overlay').classList.add('open');
+};
+document.getElementById('credit-close-btn').onclick = () => {
+  document.getElementById('credit-popup').classList.remove('open');
+  document.getElementById('credit-overlay').classList.remove('open');
+};
 
 // ── 設定パネル ──
 function openSettings() {
