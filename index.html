@@ -732,13 +732,71 @@ async function loadDayData(callGreeting = false) {
     document.getElementById('ai-window').style.display = 'block';
     if (callGreeting && !greetingDone) {
       greetingDone = true;
-      showAIGreeting();
+      if (!data || !data.log.trim()) {
+        // 記録なし：通常の挨拶＋テーマ質問
+        showAIGreeting();
+      } else {
+        // 記録あり：最後の発言者を判定
+        const lines = data.log.trim().split(/\n\n+/).filter(l => l.trim());
+        const lastLine = lines[lines.length - 1];
+        const userName = localStorage.getItem('userName') || 'あなた';
+        const lastIsUser = lastLine.startsWith(userName + '：') || lastLine.startsWith('あなた：');
+        if (lastIsUser) {
+          // 最後がユーザー発言：直近10件を履歴に入れてAPIを呼ぶ
+          resumeConversation(lines);
+        }
+        // 最後が琴音さん：発言窓は空白のまま（何もしない）
+      }
     }
   } else {
     logEl.setAttribute('readonly', true);
     document.getElementById('input-area').style.display = 'none';
     document.getElementById('ai-window').style.display = 'none';
   }
+}
+
+// ── 会話再開（直近10件を履歴に入れてAPIを呼ぶ）──
+async function resumeConversation(lines) {
+  const aiMsg = document.getElementById('ai-message');
+  const sendBtn = document.getElementById('send-btn');
+  const userName = localStorage.getItem('userName') || 'あなた';
+
+  // 直近10件を取得
+  const recent = lines.slice(-10);
+
+  // conversationHistoryに変換
+  conversationHistory = [];
+  for (const line of recent) {
+    if (line.startsWith('琴音さん：')) {
+      conversationHistory.push({ role: 'assistant', content: line.replace('琴音さん：', '') });
+    } else {
+      const content = line.replace(new RegExp('^' + userName + '：'), '').replace(/^あなた：/, '');
+      conversationHistory.push({ role: 'user', content });
+    }
+  }
+
+  // ローディング表示
+  aiMsg.textContent = '考えています...';
+  document.getElementById('loading-img-wait').style.display = 'none';
+  document.getElementById('loading-img-think').style.display = '';
+  document.getElementById('loading-overlay').classList.add('show');
+  sendBtn.disabled = true;
+
+  const reply = await callAI(null);
+
+  await typeText(aiMsg, reply);
+  document.getElementById('loading-overlay').classList.remove('show');
+  sendBtn.disabled = false;
+
+  // ログに追加・保存
+  const logEl = document.getElementById('user-log');
+  const key = dateKey(currentDate);
+  const logAfterAI = logEl.value
+    ? logEl.value + '\n\n' + `琴音さん：${reply}`
+    : `琴音さん：${reply}`;
+  logEl.value = logAfterAI;
+  logEl.scrollTop = logEl.scrollHeight;
+  await saveDay(key, logEl.value);
 }
 
 // ── 自動保存 ──
