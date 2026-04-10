@@ -147,6 +147,19 @@
       cursor: default;
     }
 
+    #calendar-grid .day.sunday {
+      color: #e53935;
+    }
+
+    #calendar-grid .day.saturday {
+      color: #1e88e5;
+    }
+
+    #calendar-grid .day.selected.sunday,
+    #calendar-grid .day.selected.saturday {
+      color: #fff;
+    }
+
     /* ── AIの発言窓 ── */
     #ai-window {
       background: #f0faf8;
@@ -546,6 +559,8 @@ function renderCalendar() {
 
     if (dateKey(thisDate) === dateKey(todayDate)) el.classList.add('today');
     if (dateKey(thisDate) === dateKey(currentDate)) el.classList.add('selected');
+    if (thisDate.getDay() === 0) el.classList.add('sunday');
+    if (thisDate.getDay() === 6) el.classList.add('saturday');
 
     // 未来は選択不可
     if (thisDate > todayDate) {
