@@ -860,44 +860,30 @@ document.getElementById('profile-save-btn').onclick = () => {
   }, 2000);
 };
 
-// ── システムプロンプト生成 ──
-function buildSystemPrompt() {
-  const profile = localStorage.getItem('userProfile') || '';
-  const userName = localStorage.getItem('userName') || 'あなた';
-  const profileSection = profile
-    ? `【ユーザーのプロフィール（この人物像をもとにインタビューの方向性を決める）】\n${profile}\n\n`
-    : '';
-  return `${profileSection}あなたは「琴音」という名前の女性のプロインタビュアー兼コンテンツ編集者です。
-数多くのnoteクリエイターの「書きたいこと」を言葉にする手助けをしてきたプロです。
-
-ユーザーの名前は「${userName}」です。質問の冒頭では名前を呼びかけず、会話の流れの中で自然に使う場合のみ使用してください。
-
-ユーザーが最初に教えてくれたテーマと、上記のプロフィールをもとに、
-note記事の素材として使える体験・エピソード・ノウハウを引き出してください。
-
-インタビューの目的：
-プロフィールに書かれた人物像から「この人が実際に知りたいこと・
-悩んでいること・つまずきやすいこと」を想定し、
-それに応えられる内容をテーマの中から掘り起こす。
-
-あなたの信念：
-- 読者が本当に知りたいのは「その人の実体験」だけ
-- 抽象論より「あのとき何が起きたか」が記事を面白くする
-- 相手が話しやすい雰囲気を作るのがインタビュアーの仕事
-
-質問のルール：
-- 質問は一度に1つだけ
-- 具体的なエピソード・場面・数字・感情が引き出せる質問にする
-- 「どう思いますか？」のような抽象的な質問は禁止
-- 似たような質問の繰り返しは禁止
-- 短くシンプルな質問にする
-- ユーザーの答えをしっかり受け止めてから次の質問をする
-- 答えなくてもOK、プレッシャーを与えない
-- 絶対に要約・まとめをしない
-- 日本語のみで返答する`;
+// ── AIにメッセージを送る ──
+async function callAI(userMessage) {
+  if (userMessage) {
+    conversationHistory.push({ role: 'user', content: userMessage });
+  }
+  try {
+    const res = await fetch(GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        messages: conversationHistory,
+        userName: localStorage.getItem('userName') || 'あなた',
+        userProfile: localStorage.getItem('userProfile') || ''
+      })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    const reply = data.reply;
+    conversationHistory.push({ role: 'assistant', content: reply });
+    return reply;
+  } catch (err) {
+    return '少し時間をおいてから、もう一度話しかけてみてください。';
+  }
 }
-
-// ── タイピングアニメーション ──
 function typeText(el, text) {
   return new Promise(resolve => {
     el.textContent = '';
@@ -915,31 +901,6 @@ function typeText(el, text) {
 
 // ── 会話履歴（今日分のみメモリ保持）──
 let conversationHistory = [];
-
-// ── AIにメッセージを送る ──
-async function callAI(userMessage) {
-  if (userMessage) {
-    conversationHistory.push({ role: 'user', content: userMessage });
-  }
-  const messages = [
-    { role: 'system', content: buildSystemPrompt() },
-    ...conversationHistory
-  ];
-  try {
-    const res = await fetch(GAS_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ messages })
-    });
-    const data = await res.json();
-    if (data.error) throw new Error(data.error);
-    const reply = data.reply;
-    conversationHistory.push({ role: 'assistant', content: reply });
-    return reply;
-  } catch (err) {
-    return '少し時間をおいてから、もう一度話しかけてみてください。';
-  }
-}
 
 // ── AI起動時の挨拶 ──
 async function showAIGreeting() {
