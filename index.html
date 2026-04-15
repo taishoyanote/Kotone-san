@@ -881,7 +881,7 @@ async function callAI(userMessage) {
     conversationHistory.push({ role: 'assistant', content: reply });
     return reply;
   } catch (err) {
-    return '少し時間をおいてから、もう一度話しかけてみてください。';
+    return '__ERROR__';
   }
 }
 function typeText(el, text) {
@@ -999,15 +999,37 @@ async function sendMessage() {
 
   let reply;
   if (userMessageCount > 0 && userMessageCount <= 100 && userMessageCount % 10 === 0) {
-    // 10回刻みで継続確認
     reply = await callAI(text + '\n\n※ここで一度確認してください：「たくさん話してくれてありがとうございます。まだ続けますか？もちろん続けなくても大丈夫ですよ。」と伝えてから、続きの質問は控えてください。');
   } else {
     reply = await callAI(text);
   }
 
-  await typeText(aiMsg, reply);
   document.getElementById('loading-overlay').classList.remove('show');
   sendBtn.disabled = false;
+
+  // エラー時：記録から直前のユーザー発言を削除・入力欄に戻す
+  if (reply === '__ERROR__') {
+    // conversationHistoryから最後のユーザー発言を取り消す
+    if (conversationHistory.length > 0 && conversationHistory[conversationHistory.length - 1].role === 'user') {
+      conversationHistory.pop();
+    }
+    userMessageCount--;
+    // 記録から直前のユーザー発言を削除
+    const lines = logEl.value.split(/\n\n/);
+    lines.pop();
+    logEl.value = lines.join('\n\n');
+    logEl.scrollTop = logEl.scrollHeight;
+    await saveDay(key, logEl.value);
+    // 入力欄に発言を戻す
+    input.value = text;
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 100) + 'px';
+    // エラーメッセージを表示（「通信エラー」だけ赤色）
+    aiMsg.innerHTML = '<span style="color:#e53935;">通信エラー</span>が発生しました。\n少し時間をおいてから、もう一度「送信」を押してみてください。';
+    return;
+  }
+
+  await typeText(aiMsg, reply);
 
   // AI発言もログに追加（時間表示なし）
   const logAfterAI = logEl.value
